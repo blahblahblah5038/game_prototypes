@@ -31,7 +31,7 @@ def reshape(width, height):
   #/* load a projection matrix that matches the window aspect ratio */
   gl.glMatrixMode(gl.GL_PROJECTION);
   gl.glLoadIdentity();
-  #glu.gluPerspective(45.0, float(width)/float(height), 1.0, 100.0);
+  glu.gluPerspective(0, float(width)/float(height), 1.0, 100.0);
 
   #/* reset the modelview matrix */
   gl.glMatrixMode(gl.GL_MODELVIEW);
@@ -76,7 +76,6 @@ def display():
     gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, [1.0,1.0,1.0,1.0]);
     gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION,[0.4,0.0,-1.0,0.0]); 
     gl.glPopMatrix()
-
 
     gl.glPushMatrix()
     gl.glTranslate(-.5, 0, 0) 
