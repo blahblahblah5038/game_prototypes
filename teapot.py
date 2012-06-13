@@ -75,18 +75,26 @@ def display():
 
     gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, [1.0,1.0,1.0,1.0]);
     gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION,[0.4,0.0,-1.0,0.0]); 
+    gl.glPopMatrix()
+
 
     gl.glPushMatrix()
     gl.glTranslate(-.5, 0, 0) 
+    gl.glRotatef(rot['x'], 1.0, 0.0, 0.0)
+    gl.glRotatef(rot['y'], 0.0, 1.0, 0.0)
+    gl.glRotatef(rot['z'], 0.0, 0.0, 1.0)
+
     glut.glutSolidTeapot(.3)
     gl.glPopMatrix()
 
     gl.glPushMatrix()
     gl.glTranslate(.5, 0, 0) 
+    gl.glRotatef(rot['x'], 1.0, 0.0, 0.0)
+    gl.glRotatef(rot['y'], 0.0, 1.0, 0.0)
+    gl.glRotatef(rot['z'], 0.0, 0.0, 1.0)
+
     glut.glutSolidTeapot(.3)
     glut.glutSwapBuffers()
-    gl.glPopMatrix()
-
     gl.glPopMatrix()
 
     end = time.time()
