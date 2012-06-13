@@ -16,6 +16,11 @@ glu.gluLookAt(0.0, 0.0, 10.0,
     0.0, 0.0, 0.0,  
     0.0, 1.0, 0.0); 
 
+rot = dict()
+rot['x'] = 0.0
+rot['y'] = 0.0
+rot['z'] = 0.0
+
 def redraw(ignored):
     glut.glutPostRedisplay()
 
@@ -31,18 +36,59 @@ def reshape(width, height):
   #/* reset the modelview matrix */
   gl.glMatrixMode(gl.GL_MODELVIEW);
 
+def keyboard(key, x, y):
+    if key == '=':
+        rot['x']=rot['x']+10.0
+    if key == '-':
+        rot['x']=rot['x']-10.0
+    if key == ']':
+        rot['y']=rot['y']+10.0
+    if key == '[':
+        rot['y']=rot['y']-10.0
+    if key == '\'':
+        rot['z']=rot['z']+10.0
+    if key == ';':
+        rot['z']=rot['z']-10.0
+
+    if rot['x']>=360:
+        rot['x'] = rot['x'] - 360.0
+    if rot['x']<0:
+        rot['x'] = rot['x'] + 360.0
+    if rot['y']>=360:
+        rot['y'] = rot['y'] - 360.0
+    if rot['y']<0:
+        rot['y'] = rot['y'] + 360.0
+    if rot['z']>=360:
+        rot['z'] = rot['z'] - 360.0
+    if rot['z']<0:
+        rot['z'] = rot['z'] + 360.0
+
 def display():
     start = time.time()
+
     gl.glClear(gl.GL_COLOR_BUFFER_BIT |gl.GL_DEPTH_BUFFER_BIT) 
+
+    gl.glPushMatrix()
+    gl.glRotatef(rot['x'], 1.0, 0.0, 0.0)
+    gl.glRotatef(rot['y'], 0.0, 1.0, 0.0)
+    gl.glRotatef(rot['z'], 0.0, 0.0, 1.0)
+
+    gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, [1.0,1.0,1.0,1.0]);
+    gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION,[0.4,0.0,-1.0,0.0]); 
+
     gl.glPushMatrix()
     gl.glTranslate(-.5, 0, 0) 
     glut.glutSolidTeapot(.3)
     gl.glPopMatrix()
+
     gl.glPushMatrix()
     gl.glTranslate(.5, 0, 0) 
     glut.glutSolidTeapot(.3)
     glut.glutSwapBuffers()
     gl.glPopMatrix()
+
+    gl.glPopMatrix()
+
     end = time.time()
 
     per = max([0,PERIOD-end+start])
@@ -61,11 +107,9 @@ gl.glEnable(gl.GL_LIGHTING)
 gl.glEnable(gl.GL_LIGHT0)
 gl.glEnable(gl.GL_DEPTH_TEST)
 
-gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, [1.0,1.0,1.0,1.0]);
-gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION,[0.4,0.0,-1.0,0.0]); 
-
 glut.glutDisplayFunc(display)
 glut.glutReshapeFunc(reshape)
+glut.glutKeyboardFunc(keyboard)
 
 #/* define material properties */
 material_ambient = [0.20, 0.20, 0.4];
