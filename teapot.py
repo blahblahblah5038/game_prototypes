@@ -93,7 +93,7 @@ def display():
     gl.glRotatef(rot['y'], 0.0, 1.0, 0.0)
     gl.glRotatef(rot['z'], 0.0, 0.0, 1.0)
 
-    glut.glutSolidTeapot(.3)
+    glut.glutSolidTeapot(.29)
     gl.glPopMatrix()
 
     gl.glPushMatrix()
@@ -102,7 +102,7 @@ def display():
     gl.glRotatef(rot['y'], 0.0, 1.0, 0.0)
     gl.glRotatef(rot['z'], 0.0, 0.0, 1.0)
 
-    glut.glutSolidTeapot(.3)
+    glut.glutSolidTeapot(.29)
     glut.glutSwapBuffers()
     gl.glPopMatrix()
 
@@ -140,15 +140,18 @@ gl.glMaterialfv(gl.GL_FRONT, gl.GL_DIFFUSE, material_diffuse);
 gl.glMaterialfv(gl.GL_FRONT, gl.GL_SPECULAR, material_specular);
 gl.glMaterialf(gl.GL_FRONT, gl.GL_SHININESS, material_shininess);
 
+gl.glClearColor(.5,.5,.5,0)
+
 vertex = shaders.compileShader(
     """
+    varying vec4 pos;
     varying vec4 color;
     varying vec3 vertex_light_position;
     varying vec3 vertex_light_half_vector;
     varying vec3 vertex_normal;
  
     void main(){
-        gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;
+        pos = gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;
         
         vertex_normal = normalize(gl_NormalMatrix * gl_Normal);
         vertex_light_position = normalize(gl_LightSource[0].position.xyz);
@@ -159,6 +162,7 @@ vertex = shaders.compileShader(
     }""", gl.GL_VERTEX_SHADER)
 
 fragment = shaders.compileShader("""
+    varying vec4 pos;
     varying vec4 color;
     varying vec3 vertex_light_position;
     varying vec3 vertex_light_half_vector;
@@ -170,7 +174,29 @@ fragment = shaders.compileShader("""
         vec4 diffuse_color = gl_FrontMaterial.diffuse*gl_LightSource[0].diffuse;
         vec4 ambient_color = gl_FrontMaterial.ambient * gl_LightSource[0].ambient + gl_LightModel.ambient * gl_FrontMaterial.ambient;
         vec4 specular_color = gl_FrontMaterial.specular * gl_LightSource[0].specular * pow(max(dot(vertex_normal, vertex_light_half_vector), 0.0) , gl_FrontMaterial.shininess);
-        gl_FragColor = diffuse_color*diffuse_value+ambient_color+specular_color;
+
+        //vec4 pos = gl_FragCoord;
+        vec4 tcolor = diffuse_color*diffuse_value+ambient_color+specular_color;
+        if(pos.x<0) gl_FragColor = tcolor;
+        else{
+            vec4 tcolor_noalpha = tcolor;
+            tcolor_noalpha.a = 0;
+            float len = length(tcolor_noalpha);
+            vec4 tcolor_norm = normalize(tcolor_noalpha);
+            if(len>.8) {
+                gl_FragColor = tcolor_norm; 
+                tcolor_norm.a = 1.0;
+            } else if(len>.5) {
+                gl_FragColor = .7*tcolor_norm; 
+                tcolor_norm.a = 1.0;
+            } else if(len>.3) {
+                gl_FragColor = .2*tcolor_norm; 
+                tcolor_norm.a = 1.0;
+            } else {
+                gl_FragColor = .1*tcolor_norm;           
+                tcolor_norm.a = 1.0;
+            }
+        }
         //gl_FragColor = vec4(1.0,1.0,1.0,1.0);
     }""", gl.GL_FRAGMENT_SHADER)
 
