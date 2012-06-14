@@ -1,8 +1,18 @@
 from OpenGL import GL as gl
 from OpenGL import GLU as glu
 from OpenGL import GLUT as glut
+#from OpenGLContext import testingcontext
+#BaseContext = testingcontext.getInteractive()
+#from gl.arrays import vbo as glVbo
+#from OpenGLContext import arrays as glContextArrays
+from  OpenGL.GL import shaders
+
 import sys
 import time
+
+#class TestContext(BaseContext):
+#    def OnInit(self):
+#        print 'init base context'
 
 FPS = 60.0 #the ideal number of frames per second
 PERIOD = 1.0/FPS*1000 #convert frequency to period and convert from s to ms.
@@ -129,6 +139,43 @@ gl.glMaterialfv(gl.GL_FRONT, gl.GL_AMBIENT, material_ambient);
 gl.glMaterialfv(gl.GL_FRONT, gl.GL_DIFFUSE, material_diffuse);
 gl.glMaterialfv(gl.GL_FRONT, gl.GL_SPECULAR, material_specular);
 gl.glMaterialf(gl.GL_FRONT, gl.GL_SHININESS, material_shininess);
+
+vertex = shaders.compileShader(
+    """
+    varying vec4 color;
+    varying vec3 vertex_light_position;
+    varying vec3 vertex_light_half_vector;
+    varying vec3 vertex_normal;
+ 
+    void main(){
+        gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;
+        
+        vertex_normal = normalize(gl_NormalMatrix * gl_Normal);
+        vertex_light_position = normalize(gl_LightSource[0].position.xyz);
+        vertex_light_half_vector = normalize(gl_LightSource[0].halfVector.xyz);
+        
+        gl_FrontColor=gl_Color;
+        color = gl_Color;
+    }""", gl.GL_VERTEX_SHADER)
+
+fragment = shaders.compileShader("""
+    varying vec4 color;
+    varying vec3 vertex_light_position;
+    varying vec3 vertex_light_half_vector;
+    varying vec3 vertex_normal;
+
+    void main(){
+        float diffuse_value = max(dot(vertex_normal, vertex_light_position), 0.0);
+
+        vec4 diffuse_color = gl_FrontMaterial.diffuse*gl_LightSource[0].diffuse;
+        vec4 ambient_color = gl_FrontMaterial.ambient * gl_LightSource[0].ambient + gl_LightModel.ambient * gl_FrontMaterial.ambient;
+        vec4 specular_color = gl_FrontMaterial.specular * gl_LightSource[0].specular * pow(max(dot(vertex_normal, vertex_light_half_vector), 0.0) , gl_FrontMaterial.shininess);
+        gl_FragColor = diffuse_color*diffuse_value+ambient_color+specular_color;
+        //gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+    }""", gl.GL_FRAGMENT_SHADER)
+
+shader = shaders.compileProgram(vertex,fragment)
+gl.glUseProgram(shader)
 
 glut.glutTimerFunc(int(PERIOD), redraw, 0)
 glut.glutMainLoop()
