@@ -1,6 +1,6 @@
 Things I'd like to do on demos
 
 toon_shader:
-    change thresholding to correctly use intensity
     add in outer lines (see sobel filter)
     antialiasing (I have no idea how, fragment shader?)
+    prolly done already - change thresholding to correctly use intensity
