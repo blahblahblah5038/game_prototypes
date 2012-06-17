@@ -184,16 +184,16 @@ fragment = shaders.compileShader("""
             float len = length(tcolor_noalpha);
             vec4 tcolor_norm = normalize(tcolor_noalpha);
             if(len>.8) {
-                gl_FragColor = tcolor; 
+                gl_FragColor = tcolor_norm;
                 tcolor_norm.a = 1.0;
             } else if(len>.5) {
-                gl_FragColor = .7*tcolor; 
+                gl_FragColor = .7*tcolor_norm;
                 tcolor_norm.a = 1.0;
             } else if(len>.3) {
-                gl_FragColor = .2*tcolor; 
+                gl_FragColor = .2*tcolor_norm;
                 tcolor_norm.a = 1.0;
             } else {
-                gl_FragColor = .1*tcolor;           
+                gl_FragColor = .1*tcolor_norm; 
                 tcolor_norm.a = 1.0;
             }
         }
