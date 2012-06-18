@@ -35,16 +35,19 @@ def redraw(ignored):
     glut.glutPostRedisplay()
 
 def reshape(width, height):
-  #/* set the viewport to the window width and height */
-  gl.glViewport(0, 0, width, height);
+    g_Width = width;
+    g_Height = height;
+    gl.glUniform2f(uniform_WindowSize, g_Width, g_Height);
+    #/* set the viewport to the window width and height */
+    gl.glViewport(0, 0, width, height);
+    
+    #/* load a projection matrix that matches the window aspect ratio */
+    gl.glMatrixMode(gl.GL_PROJECTION);
+    gl.glLoadIdentity();
+    glu.gluPerspective(0, float(width)/float(height), 1.0, 100.0);
   
-  #/* load a projection matrix that matches the window aspect ratio */
-  gl.glMatrixMode(gl.GL_PROJECTION);
-  gl.glLoadIdentity();
-  glu.gluPerspective(0, float(width)/float(height), 1.0, 100.0);
-
-  #/* reset the modelview matrix */
-  gl.glMatrixMode(gl.GL_MODELVIEW);
+    #/* reset the modelview matrix */
+    gl.glMatrixMode(gl.GL_MODELVIEW);
 
 def keyboard(key, x, y):
     if key == '=':
@@ -142,6 +145,7 @@ gl.glMaterialf(gl.GL_FRONT, gl.GL_SHININESS, material_shininess);
 
 gl.glClearColor(.5,.5,.5,0)
 
+
 vertex = shaders.compileShader(
     """
     varying vec4 pos;
@@ -168,6 +172,35 @@ fragment = shaders.compileShader("""
     varying vec3 vertex_light_half_vector;
     varying vec3 vertex_normal;
 
+    uniform sampler2D samp;
+    uniform vec2 WindowSize;
+
+    vec4 toon_color(vec4 tcolor)
+    {
+        vec4 retcolor;
+        if(pos.x<0) retcolor = tcolor;
+        else{
+            vec4 tcolor_noalpha = tcolor;
+            tcolor_noalpha.a = 0;
+            float len = length(tcolor_noalpha);
+            vec4 tcolor_norm = normalize(tcolor_noalpha);
+            if(len>.8) {
+                retcolor = tcolor_norm;
+                tcolor_norm.a = 1.0;
+            } else if(len>.5) {
+                retcolor = .7*tcolor_norm;
+                tcolor_norm.a = 1.0;
+            } else if(len>.3) {
+                retcolor = .2*tcolor_norm;
+                tcolor_norm.a = 1.0;
+            } else {
+                retcolor = .1*tcolor_norm; 
+                tcolor_norm.a = 1.0;
+            }
+        }
+        return retcolor;
+    }
+
     void main(){
         float diffuse_value = max(dot(vertex_normal, vertex_light_position), 0.0);
 
@@ -177,31 +210,56 @@ fragment = shaders.compileShader("""
 
         //vec4 pos = gl_FragCoord;
         vec4 tcolor = diffuse_color*diffuse_value+ambient_color+specular_color;
-        if(pos.x<0) gl_FragColor = tcolor;
-        else{
-            vec4 tcolor_noalpha = tcolor;
-            tcolor_noalpha.a = 0;
-            float len = length(tcolor_noalpha);
-            vec4 tcolor_norm = normalize(tcolor_noalpha);
-            if(len>.8) {
-                gl_FragColor = tcolor_norm;
-                tcolor_norm.a = 1.0;
-            } else if(len>.5) {
-                gl_FragColor = .7*tcolor_norm;
-                tcolor_norm.a = 1.0;
-            } else if(len>.3) {
-                gl_FragColor = .2*tcolor_norm;
-                tcolor_norm.a = 1.0;
-            } else {
-                gl_FragColor = .1*tcolor_norm; 
-                tcolor_norm.a = 1.0;
+
+        if(pos.x>0&& pos.y>0)
+        {
+            int k = 5;
+            vec4 adjacency[5][5];
+            for(int i = 0; i<k; i++)
+            {
+                int ci = gl_PointCoord.x*WindowSize.x+i-k/2;
+                for(int j = 0; j<k; j++)
+                {
+                    int cj = gl_PointCoord.y*WindowSize.y+j-k/2;
+                    if(ci>k/2&&ci<WindowSize.x-k/2-1&&cj>k/2&&cj<WindowSize.y-k/2-1)
+                    {
+                        vec2 coord;
+                        coord.x = ci/WindowSize.x;
+                        coord.y = ci/WindowSize.y;
+                        adjacency[ci-k/2][cj-k/2]=toon_color(tex2D(samp,coord));
+                    }
+                }
             }
+            
+            float sig = 1;
+            float norm = 0;
+            vec4 final_color;
+            for(int i = 0; i<k; i++)
+            {
+                for(int j = 0; j<k; j++)
+                {
+                    float mltlen = length(adjacency[i][j]);
+                    float mlt = exp(-mltlen*mltlen/(sig*sig));
+                    norm = norm + mlt;
+                    final_color = final_color+adjacency[i][j]*.1;
+                    //final_color = final_color+vec4(1.0,0.0,0.0,0.0)/25.0;
+                }       
+            }
+            final_color = final_color/norm;
+            gl_FragColor = final_color;
+            //gl_FragColor = adjacency[k/2][k/2];
         }
-        //gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+        else
+        {
+            gl_FragColor = toon_color(tcolor);
+        }
     }""", gl.GL_FRAGMENT_SHADER)
 
 shader = shaders.compileProgram(vertex,fragment)
+uniform_WindowSize = gl.glGetUniformLocation(shader,'WindowSize');
+
 gl.glUseProgram(shader)
+gl.glUniform2f(uniform_WindowSize, g_Width, g_Height);
 
 glut.glutTimerFunc(int(PERIOD), redraw, 0)
 glut.glutMainLoop()
